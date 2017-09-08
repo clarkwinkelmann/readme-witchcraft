@@ -16,6 +16,6 @@ class DiscordBadge extends AbstractBadge
 
     public function image(): string
     {
-        return 'https://img.shields.io/badge/discord-chat-blue.svg';
+        return 'https://discordapp.com/api/guilds/240489109041315840/embed.png';
     }
 }

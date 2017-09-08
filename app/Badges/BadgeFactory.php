@@ -28,8 +28,8 @@ class BadgeFactory
             $badges[] = new PackagistDownloadsBadge($project);
         }
 
-        $badges[] = new DiscordBadge();
         $badges[] = new PatreonBadge();
+        $badges[] = new DiscordBadge();
 
         return $badges;
     }
