@@ -95,6 +95,13 @@ class ReadmeWizard
         $project->usesPackagist = true;
         $project->usesTravis = file_exists($this->path . '.travis.yml');
 
+        $matches = [];
+        if (preg_match('~\[.*flarum\s+discuss.*\]\((https://discuss.flarum.org/d/.+)\)~i', $raw_readme, $matches) >= 1) {
+            $project->discussLink = $matches[1];
+        } else {
+            throw new \Exception('Could not find discuss link');
+        }
+
         $existing_sections = new Collection();
         $existing_titles = new Collection();
         $raw_existing_sections = preg_split('/\n## /', $raw_readme);
@@ -174,7 +181,8 @@ class ReadmeWizard
 
                 $line_out = str_replace("{{ repo }}", $project->repo, $line_out);
                 $line_out = str_replace("{{ name }}", $project->name, $line_out);
-                $line_out = str_replace("{{ license-file }}", $project->licenseFile, $line_out);
+                $line_out = str_replace("{{ license_file }}", $project->licenseFile, $line_out);
+                $line_out = str_replace("{{ discuss_link }}", $project->discussLink, $line_out);
                 $line_out = str_replace("{{ badges }}", $badges_string, $line_out);
 
                 $output[] = $line_out;

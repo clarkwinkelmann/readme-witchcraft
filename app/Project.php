@@ -8,6 +8,7 @@ class Project
     public $name;
     public $license;
     public $licenseFile;
+    public $discussLink;
 
     public $usesPackagist;
     public $usesTravis;

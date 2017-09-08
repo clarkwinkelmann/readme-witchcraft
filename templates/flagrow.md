@@ -1,4 +1,4 @@
-# {{ name }} by ![flagrow logo](https://avatars0.githubusercontent.com/u/16413865?v=3&s=15) [flagrow](https://discuss.flarum.org/d/1832-flagrow-extension-developer-group), a project of [Gravure](https://gravure.io/).
+# {{ name }} by ![Flagrow logo](https://avatars0.githubusercontent.com/u/16413865?v=3&s=20) [Flagrow](https://discuss.flarum.org/d/1832-flagrow-extension-developer-group), a project of [Gravure](https://gravure.io/)
 
 {{ badges }}
 
@@ -18,3 +18,13 @@ If you discover a security vulnerability within {{ name }}, please send an email
 Please include as many details as possible. You can use `php flarum info` to get the PHP, Flarum and extension versions installed.
 
 ##? FAQ
+
+## Links
+
+- [Flarum Discuss post]({{ discuss_link }})
+- [Source code on GitHub](https://github.com/{{ repo }})
+- [Changelog](https://github.com/{{ repo }}/blob/master/changelog.md)
+- [Report an issue](https://github.com/{{ repo }}/issues)
+- [Download via Packagist](https://packagist.org/packages/{{ repo }})
+
+An extension by [Flagrow](https://flagrow.io/), a project of [Gravure](https://gravure.io/).
