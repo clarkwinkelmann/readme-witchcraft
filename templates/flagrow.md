@@ -21,9 +21,9 @@ Please include as many details as possible. You can use `php flarum info` to get
 
 ## Links
 
-- [Flarum Discuss post]({{ discuss_link }})
+@if (discussLink)- [Flarum Discuss post]({{ discussLink }})
 - [Source code on GitHub](https://github.com/{{ repo }})
-- [Changelog](https://github.com/{{ repo }}/blob/master/changelog.md)
+@if (changelogFile)- [Changelog](https://github.com/{{ repo }}/blob/master/{{ changelogFile }})
 - [Report an issue](https://github.com/{{ repo }}/issues)
 - [Download via Packagist](https://packagist.org/packages/{{ repo }})
 

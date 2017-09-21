@@ -10,13 +10,18 @@ class BadgeFactory
     {
         $badges = [];
 
-        switch ($project->license) {
-            case 'mit':
-                $badges[] = new MITLicenseBadge($project);
-                break;
-            case 'cc-by-nc-nd':
-                $badges[] = new CCByNCNDBadge($project);
-                break;
+        if ($project->license) {
+            switch ($project->license) {
+                case 'mit':
+                case 'MIT':
+                    $badges[] = new MITLicenseBadge($project);
+                    break;
+                case 'cc-by-nc-nd':
+                    $badges[] = new CCByNCNDBadge($project);
+                    break;
+                default:
+                    throw new \Exception('Unknown license ' . $project->license);
+            }
         }
 
         if ($project->usesTravis) {

@@ -4,12 +4,14 @@ namespace App;
 
 use App\Badges\AbstractBadge;
 use App\Badges\BadgeFactory;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
 class ReadmeWizard
 {
     protected $path;
-    protected $readme = 'readme.md';
+    protected $readme = 'README.md';
+    protected $notes = [];
 
     public function __construct($path)
     {
@@ -23,6 +25,16 @@ class ReadmeWizard
         }
     }
 
+    protected function note($message)
+    {
+        $this->notes[] = $message;
+    }
+
+    public function getNotes()
+    {
+        return $this->notes;
+    }
+
     protected function firstFile($filenames):? string
     {
         foreach ($filenames as $filename) {
@@ -34,7 +46,7 @@ class ReadmeWizard
         return null;
     }
 
-    protected function invalidLinks($content): array
+    protected function checkInvalidLinks($content)
     {
         $known_invalid_links = [
             // Never used, but mistaken with packagist.org
@@ -52,29 +64,27 @@ class ReadmeWizard
         $matches = [];
         preg_match_all('#\bhttps?://[^,\s()<>]+(?:\([\w\d]+\)|([^,[:punct:]\s]|/))#', $content, $matches);
 
-        $invalid_links = [];
-
         foreach ($matches[0] as $link) {
             foreach ($known_invalid_links as $invalid_link) {
                 if (str_contains($link, $invalid_link)) {
-                    $invalid = new \stdClass();
-                    $invalid->link = $link;
-                    $invalid->rule = $invalid_link;
-
-                    $invalid_links[] = $invalid;
+                    $this->note("Warning: link $link is invalid (matches $invalid_link)");
                 }
             }
         }
-
-        return $invalid_links;
     }
 
     public function fixedContent(): Readme
     {
-        $readme_file = $this->path . $this->firstFile(['readme.md', 'README.md']);
-        if (!file_exists($readme_file)) {
+        $readme_file_name = $this->firstFile(['readme.md', 'README.md']);
+
+        if (!$readme_file_name) {
             throw new \Exception('no README file found');
         }
+        if ($readme_file_name !== 'README.md') {
+            $this->note('Warning: README file use incorrect case');
+        }
+
+        $readme_file = $this->path . $readme_file_name;
 
         $composer_file = $this->path . 'composer.json';
         if (!file_exists($composer_file)) {
@@ -84,22 +94,47 @@ class ReadmeWizard
         $raw_template = file_get_contents('templates/flagrow.md');
         $raw_readme = file_get_contents($readme_file);
 
-        $composer = new Collection(json_decode(file_get_contents($composer_file)));
+        $composer = new Collection(json_decode(file_get_contents($composer_file), true));
 
         $project = new Project();
         $project->repo = $composer->get('name');
         $project->name = null;
         $project->license = $composer->get('license');
+        if (!$project->license) {
+            $this->note('No license found in composer.json');
+        }
+
         $project->licenseFile = $this->firstFile(['license.md', 'LICENSE.md', 'LICENSE.txt']);
+        if (!$project->licenseFile) {
+            $this->note('Warning: No LICENSE file');
+        } else if (explode('.', $project->licenseFile)[0] !== 'LICENSE') {
+            $this->note('Warning: LICENSE file use incorrect case');
+        }
+
+        $project->changelogFile = $this->firstFile(['changelog.md', 'CHANGELOG.md']);
+
+        if ($project->changelogFile && $project->changelogFile !== 'CHANGELOG.md') {
+            $this->note('Warning: CHANGELOG file use incorrect case');
+        }
 
         $project->usesPackagist = true;
         $project->usesTravis = file_exists($this->path . '.travis.yml');
 
-        $matches = [];
-        if (preg_match('~\[.*flarum\s+discuss.*\]\((https://discuss.flarum.org/d/.+)\)~i', $raw_readme, $matches) >= 1) {
-            $project->discussLink = $matches[1];
+        $project->discussLink = Arr::get($composer, 'extra.flagrow.discuss');
+        if ($project->discussLink) {
+            if (!starts_with($project->discussLink, 'https://discuss.flarum.org/d/')) {
+                $this->note('Discuss link might me malformed (missing https:// ?)');
+            }
         } else {
-            throw new \Exception('Could not find discuss link');
+            $this->note('No Discuss link found in composer file. Attempting auto-discovery');
+
+            $matches = [];
+            if (preg_match('~\[.*flarum\s+discuss.*\]\((https://discuss.flarum.org/d/.+)\)~i', $raw_readme, $matches) >= 1) {
+                $project->discussLink = $matches[1];
+            } else {
+                $this->note('No Discuss link found via auto-discovery');
+            }
+
         }
 
         $existing_sections = new Collection();
@@ -158,6 +193,18 @@ class ReadmeWizard
         })->implode(' ');
 
         foreach ($raw_template_lines as $line) {
+            // An `@if (var)` syntax at the start of the line allows for conditionally rendering the line
+            // The variable will be queried against the $project object. If it is falsy the line won't be rendered
+            $matches = [];
+            if (preg_match('/^@if\s*\(([a-zA-Z0-9]+)\)(.+)$/', $line, $matches) === 1) {
+                $keyname = $matches[1];
+                if ($project->$keyname) {
+                    $line = $matches[2];
+                } else {
+                    continue;
+                }
+            }
+
             $matches = [];
             if (preg_match('/^##(\??) (.+)$/', $line, $matches) === 1) {
                 $current_section = strtolower($matches[2]);
@@ -168,6 +215,12 @@ class ReadmeWizard
                     if ($existing_sections->has($current_section)) {
                         $output[] = '## ' . $matches[2] . "\n";
                         $output[] = $existing_sections->get($current_section);
+                    } else {
+                        // When we skip sections we need to remove some blank lines, otherwise there are two many carriage returns in the output
+                        // If the line before the removed section is blank, we remove it from the output
+                        if (empty($output[count($output) - 1])) {
+                            array_pop($output);
+                        }
                     }
                 } else {
                     $output[] = '## ' . $matches[2];
@@ -179,10 +232,18 @@ class ReadmeWizard
             } else {
                 $line_out = $line;
 
-                $line_out = str_replace("{{ repo }}", $project->repo, $line_out);
-                $line_out = str_replace("{{ name }}", $project->name, $line_out);
-                $line_out = str_replace("{{ license_file }}", $project->licenseFile, $line_out);
-                $line_out = str_replace("{{ discuss_link }}", $project->discussLink, $line_out);
+                $replace_tokens = [
+                    'repo',
+                    'name',
+                    'licenseFile',
+                    'changelogFile',
+                    'discussLink',
+                ];
+
+                foreach ($replace_tokens as $token) {
+                    $line_out = str_replace("{{ $token }}", $project->$token, $line_out);
+                }
+
                 $line_out = str_replace("{{ badges }}", $badges_string, $line_out);
 
                 $output[] = $line_out;
@@ -212,11 +273,17 @@ class ReadmeWizard
             throw new \Exception('Some existing sections can\'t fit in the template (' . $remaining_existing_sections->implode(', ') . ')');
         }
 
+        $this->checkInvalidLinks($output_string);
+
+        if (!str_contains($output_string, 'https://discuss.flarum.org/d/5151')) {
+            $this->note('No Bazaar link found in the README');
+        }
+
         $readme = new Readme();
         $readme->path = $readme_file;
         $readme->currentMarkdown = $raw_readme;
         $readme->fixedMarkdown = $output_string;
-        $readme->invalidLinks = $this->invalidLinks($output_string);
+        $readme->notes = $this->getNotes();
 
         return $readme;
     }

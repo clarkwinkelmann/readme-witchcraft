@@ -32,10 +32,18 @@ class CheckCommand extends AbstractCommand
 
         if ($readme->currentMarkdown === $readme->fixedMarkdown) {
             $this->info('You\'re all good !');
+
+            foreach ($readme->notes as $note) {
+                $this->warn($note);
+            }
         } else {
             $this->warn('Found issues with the readme !');
 
             echo $readme->fixedMarkdown;
+
+            foreach ($readme->notes as $note) {
+                $this->warn($note);
+            }
 
             if ($this->option('fix') || $this->confirm('Fix the file with the content shown above ?')) {
                 file_put_contents($readme->path, $readme->fixedMarkdown);
@@ -43,14 +51,6 @@ class CheckCommand extends AbstractCommand
                 $this->info('README updated');
             } else {
                 $this->info('Did nothing');
-            }
-        }
-
-        if ($readme->invalidLinks) {
-            $this->warn('Invalid links were found');
-
-            foreach ($readme->invalidLinks as $link) {
-                $this->warn('- ' . $link->link . ' (rule ' . $link->rule . ')');
             }
         }
     }

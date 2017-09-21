@@ -8,6 +8,7 @@ class Project
     public $name;
     public $license;
     public $licenseFile;
+    public $changelogFile;
     public $discussLink;
 
     public $usesPackagist;
