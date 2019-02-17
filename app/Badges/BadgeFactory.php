@@ -33,7 +33,7 @@ class BadgeFactory
             $badges[] = new PackagistDownloadsBadge($project);
         }
 
-        $badges[] = new PatreonBadge();
+        $badges[] = new SupportUsBadge();
         $badges[] = new DiscordBadge();
 
         return $badges;
