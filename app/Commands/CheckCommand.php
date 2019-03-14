@@ -3,28 +3,12 @@
 namespace App\Commands;
 
 use App\ReadmeWizard;
-use NunoMaduro\ZeroFramework\Commands\AbstractCommand;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputOption;
+use LaravelZero\Framework\Commands\Command;
 
-class CheckCommand extends AbstractCommand
+class CheckCommand extends Command
 {
-    protected $name = 'check';
+    protected $signature = 'check {path : Path to the README folder} {--fix : Apply fixes without asking}';
     protected $description = 'Fix the given README';
-
-    protected function getArguments()
-    {
-        return [
-            ['path', InputArgument::OPTIONAL, 'Path to the README folder', '.'],
-        ];
-    }
-
-    protected function getOptions()
-    {
-        return [
-            ['fix', null, InputOption::VALUE_NONE, 'Apply fixes without asking'],
-        ];
-    }
 
     public function handle(): void
     {

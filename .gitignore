@@ -1,4 +1,4 @@
-/vendor/
-/builds/
-/database/
-composer.lock
+/vendor
+/.idea
+/.vscode
+/.vagrant

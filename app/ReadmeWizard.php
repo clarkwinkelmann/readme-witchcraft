@@ -35,7 +35,7 @@ class ReadmeWizard
         return $this->notes;
     }
 
-    protected function firstFile($filenames):? string
+    protected function firstFile($filenames): ?string
     {
         foreach ($filenames as $filename) {
             if (file_exists($this->path . $filename)) {
